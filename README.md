@@ -5,25 +5,25 @@ A curated collection of practical skills for thoughtful Vibe Coding.
 ## Install all skills
 
 ```bash
-npx skills add <your-github-account>/ohmy-craft --all
+npx skills add editso/ohmy-craft --all
 ```
 
 Install globally:
 
 ```bash
-npx skills add <your-github-account>/ohmy-craft --all --global
+npx skills add editso/ohmy-craft --all --global
 ```
 
 Install one skill:
 
 ```bash
-npx skills add <your-github-account>/ohmy-craft --skill working-efficiently
+npx skills add editso/ohmy-craft --skill working-efficiently
 ```
 
 List available skills before installing:
 
 ```bash
-npx skills add <your-github-account>/ohmy-craft --list
+npx skills add editso/ohmy-craft --list
 ```
 
 ## Layout
