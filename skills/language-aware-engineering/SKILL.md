@@ -1,6 +1,6 @@
 ---
 name: language-aware-engineering
-description: Use before adding or modifying application source code. Read the profile for each target language and the relevant project context; design typed boundaries and a coherent module shape, then review formatted code for type-modeling gaps, duplicate flows, and visual overload. Skip documentation, generated files, and purely mechanical edits.
+description: Use before adding or modifying source code. Read the profile for each target language and the relevant project context; design typed boundaries and a coherent module shape, then review formatted code for type-modeling gaps, duplicate flows, and visual overload. Skip documentation, generated files, and purely mechanical edits.
 ---
 
 # Language-Aware Engineering
@@ -15,7 +15,7 @@ Before designing or editing implementation code:
 
 1. Identify the source files that will be added or changed and the language of
    each file.
-2. Read the profile for every target language listed below. A profile is a
+2. Read the available profile for every target language. A profile is a
    required constraint for code in that language, not optional inspiration.
 3. Read only the context needed to place the work: the requested behavior,
    target module and direct callers when they exist, adjacent tests, and
@@ -24,9 +24,12 @@ Before designing or editing implementation code:
 4. Infer and preserve established local conventions unless they are the source
    of the problem being fixed.
 
-Read [Rust](references/languages/rust.md) before writing or editing Rust
-source. If no profile exists for a target language, follow its project
-conventions and language-native practices; do not apply Rust rules to it.
+Read the matching available profile before writing or editing source:
+
+- [Rust](references/languages/rust.md)
+
+If no profile exists for a target language, follow its project conventions and
+language-native practices; do not apply Rust rules to it.
 
 Do not scan an entire repository merely to find a pattern. Expand beyond this
 local context only when the change crosses a real module interface.
@@ -37,8 +40,10 @@ Before writing code, decide which of these shapes best expresses the work:
 
 - Extend an existing module interface when the new behavior belongs to its
   current responsibility.
-- For new behavior with no existing home, establish a small interface and
+- For new behavior with no existing home, define a clear responsibility and
   typed boundary before adding handlers, storage code, or control flow.
+  Introduce a caller-facing interface only when callers, variation, or an
+  external boundary require one.
 - Add a small, deep module when callers would otherwise repeat a new rule or
   need to know an implementation detail.
 - Change a domain type or state model when the current representation cannot
@@ -53,6 +58,9 @@ rule that would otherwise spread.
 
 Prefer the smallest refactor that removes a demonstrated design problem. Do
 not use a requested change as permission to rewrite unrelated code.
+
+When work redistributes responsibilities across modules or establishes a stable
+interface for multiple callers, use `codebase-design` before implementation.
 
 ## 3. Implement at the Right Seam
 
@@ -82,6 +90,9 @@ Read the formatted diff as a maintainer. In particular, revisit each changed:
 - multi-line `&&` or `||` chain;
 - multi-line macro invocation, especially `matches!`;
 - tuple pattern used solely to compact state logic;
+- a fourth active level of control-flow nesting;
+- nested `if` blocks whose outer condition exists only to guard the successful
+  path;
 - nested closure, generic expression, or builder chain that became a syntax
   staircase;
 - duplicate or near-duplicate branch; and
@@ -99,9 +110,24 @@ semantic rewrite that gives the code a natural shape:
 5. Keep multi-line code when each line is a meaningful field, branch, pipeline
    stage, or argument—not merely one fragment of an overlong expression.
 
-Do not increase line width, suppress formatting, or introduce a meaningless
-abstraction merely to preserve a one-line expression. Conversely, do not use
-language features as syntax theater when a direct expression is clearer.
+In particular, when an outer `if` only wraps the successful path, invert its
+condition and exit at the narrowest correct scope: `return` or error
+propagation from a function, `continue` from a loop, or another appropriate
+language-native exit. Do not use an early exit only to reduce indentation when
+subsequent code must still update state, flush a buffer, perform cleanup, or
+preserve another required effect.
+
+Treat a fourth active control-flow level as a refactoring trigger. Flatten the
+main path with guards, separate independent validation gates, use a state
+branch when state is the decision, or extract an operation with a real
+responsibility. Do not merely move the fourth level into a helper with no
+meaningful name. A guard that exits and immediately closes does not add a
+nesting level to the following main path.
+
+Do not override the project formatter or widen its configured line width solely
+to preserve a one-line expression. Do not introduce a meaningless abstraction
+for the same purpose. Conversely, do not use language features as syntax
+theater when a direct expression is clearer.
 
 ## 5. Verify the Change
 

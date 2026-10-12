@@ -115,6 +115,65 @@ After `cargo fmt`, inspect changed expressions that have become multi-line.
   helper solely to force a dense expression onto one line. A wider project
   line-width policy is valid only when adopted consistently for the project.
 
+## Limit Control-Flow Nesting
+
+- Keep active control-flow nesting at **three levels or fewer** in ordinary
+  production code. A fourth nested decision or iteration is a refactoring
+  trigger. Five or more levels require a concrete constraint—such as a
+  framework callback shape, protocol parser, or table-driven traversal—that
+  prevents a coherent reduction. State that constraint in the delivery summary;
+  do not add a code comment solely to justify nesting.
+- Count each active `if` / `if let`, `match`, `for`, `while`, `while let`, or
+  `loop` that a reader must hold in mind to understand a line. A `match` adds
+  one level, but its arms do not each add another; an `else if` chain remains
+  one conditional level. Do not count `fn`, `impl`, struct literals, argument
+  lists, or guard exits such as `?` and `let ... else { return; }`. A
+  single-purpose `if` guard that exits and immediately closes, such as
+  `if !ready { return; }`, does not add nesting depth to the following main
+  path, although it remains a branch for complexity purposes.
+- Do not satisfy the limit cosmetically. A helper is justified only when it
+  names a cohesive operation; a helper whose only purpose is to hide one more
+  nested block has not reduced the cognitive load.
+
+- When an outer `if` exists only to contain the successful path, invert it and
+  exit at the narrowest correct scope. Use early `return`, `?`, or `let ...
+  else` in functions; use `continue` in loops; and use `break` only when
+  ending the enclosing loop is the intended behavior. The point is to keep the
+  main path left-aligned, not to prefer any one exit keyword.
+
+  ```rust
+  fn render_cell(cell: Option<Cell>) {
+      let Some(cell) = cell else {
+          return;
+      };
+
+      render(cell);
+  }
+  ```
+
+  ```rust
+  for entry in entries {
+      let Some(entry) = entry else {
+          continue;
+      };
+
+      if !entry.is_visible() {
+          continue;
+      }
+
+      render(entry);
+  }
+  ```
+
+- Do not introduce an early exit merely to eliminate indentation. It is wrong
+  if code after the nested condition must update state, flush a buffered value,
+  release a resource, emit required output, or perform other work in the same
+  scope. In that case, keep the control flow explicit or extract the cohesive
+  operation that owns both the condition and the required follow-up.
+- If several guards only conceal a single state transition or business rule,
+  use a named operation or `match` instead of turning the flow into an
+  unstructured sequence of exits.
+
 ## Tests and Verification
 
 - Test names should state the scenario and expected outcome.
