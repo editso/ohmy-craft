@@ -42,4 +42,5 @@ The repository intentionally uses the standard Agent Skills layout so it can be 
 
 - `working-efficiently` - bounded exploration, independent claim checking, durable progress, and concise delivery.
 - `brainstorming` - design-first collaboration before implementation, included from [obra/superpowers](https://github.com/obra/superpowers) under the MIT License.
-- `codebase-design` - shared vocabulary and principles for designing deep modules, included from [mattpocock/skills](https://github.com/mattpocock/skills) under the MIT License.
+- `codebase-design` - explicit cross-module and interface design guidance for deep modules; not a routine coding-style skill, included from [mattpocock/skills](https://github.com/mattpocock/skills) under the MIT License.
+- `language-aware-engineering` - language-aware guidance for designing and evolving source code with typed boundaries, coherent modules, and clean formatter output; includes a Rust profile.
