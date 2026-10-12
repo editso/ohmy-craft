@@ -24,16 +24,45 @@ Follow: **understand → narrow → act → deliver**.
 
 In the first substantive reply, use one sentence to confirm: clarify the goal, scope tools, summarize concisely, and ask before accessing anything outside the working directory. Continue without turning this into a questionnaire.
 
-## Control Tool Scope
+## Workspace Boundary and Search Safety
 
-Before any potentially recursive, large, or slow operation:
+Treat the current working directory at task start as the hard exploration
+boundary. Before searching, run `pwd` and use only relative paths inside that
+directory.
 
-1. Confirm the working directory and use a shallow check to estimate project size.
-2. Bound paths, file types, depth, and result count; exclude dependencies, artifacts, caches, and unrelated directories.
-3. Start with the smallest viable scope and expand only as needed. Never perform an unbounded scan.
-4. Do not access paths outside the working directory unless the user has already authorized it. Otherwise state the exact path, purpose, and scope, then ask first.
-5. If output or execution becomes excessive, stop and narrow instead of repeating it.
-6. If a bounded operation is blocked or fails to find its target (missing file, ambiguous match, permission error, unclear structure), do not escalate to a broader or unbounded scan on your own judgment. Stop and ask the user for the exact path or scope. Take the next bounded step yourself only when it is obvious, narrow, and low-risk.
+- Never search or inspect with `/`, an absolute path, `..`, `~`, `$HOME`,
+  `git -C`, or a silent `cd` into another location. Read-only access outside
+  the working directory still requires explicit user authorization.
+- Do not use `find` for routine exploration. Prefer bounded `rg --files` and
+  `rg` searches against a known directory.
+- Every search must bound its directory, file types, exclusions, and output.
+  Exclude dependencies, build artifacts, caches, generated files, and `.git`
+  when applicable. Use `-m` or `head` to cap results.
+- Use this order: confirm `pwd`; inspect shallow relevant metadata; inspect
+  user-named files or directories; inspect the target module, direct callers,
+  adjacent tests, and local configuration; expand only when necessary.
+- If a bounded search fails, stop and report the exact scope searched. Do not
+  broaden to a parent directory, filesystem root, home directory, sibling
+  repository, or another absolute path without explicit authorization.
+- If output becomes excessive, stop and narrow the command. Path safety and
+  bounded scope take priority over completeness.
+
+Allowed examples:
+
+```bash
+rg --files -g '*.rs' -g '!target' . | head -n 100
+rg -n -m 50 'Pattern' src/parser
+find src/parser -maxdepth 2 -type f -name '*.rs'
+```
+
+Forbidden examples:
+
+```bash
+find /workspace
+rg 'Pattern' /
+rg 'Pattern' ..
+git -C /other/repo status
+```
 
 ## Maintain Durable Progress
 
