@@ -59,6 +59,23 @@ rule that would otherwise spread.
 Prefer the smallest refactor that removes a demonstrated design problem. Do
 not use a requested change as permission to rewrite unrelated code.
 
+### Require Evidence for an Abstraction
+
+- Start with the smallest concrete design that expresses the current behavior.
+  Do not pre-create an extension point for hypothetical variation.
+- Add an interface, type parameter, builder or factory, or forwarding
+  wrapper only for a demonstrated current need: multiple real callers or
+  implementations, a stable external boundary, a domain invariant, or a rule
+  that callers would otherwise duplicate. A type that protects a real
+  invariant is not speculative abstraction.
+- Add a module only when it gives behavior a distinct current responsibility,
+  not merely because a file has grown or a one-use wrapper can be extracted.
+- An abstraction must remove knowledge or a duplicated rule from its callers.
+  A one-use forwarding layer, a custom interface with one implementation, or
+  a type parameter with one concrete instantiation is not enough on its own.
+- Possible future reuse or testing convenience alone is not evidence. Keep
+  local code direct and concrete until real variation appears.
+
 When work redistributes responsibilities across modules or establishes a stable
 interface for multiple callers, use `codebase-design` before implementation.
 

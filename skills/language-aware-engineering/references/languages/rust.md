@@ -23,8 +23,9 @@ rewrites.
   representation as soon as the schema becomes known.
 - Use `Option<T>` for absence. Do not use sentinel strings, numbers, empty
   collections, or null-like placeholders to represent a missing value.
-- Use `Result<T, E>` with meaningful errors for recoverable failure. Do not
-  encode success with booleans, numeric error codes, strings, or `panic!`.
+- For an operation that can fail recoverably, return `Result<T, E>` with a
+  meaningful error instead of a bare success boolean, numeric error code,
+  string, or `panic!`.
 - Model a finite set of mutually exclusive business states with an `enum`, not
   string tags, integer codes, magic constants, or combinations of flags.
 - Keep a genuine binary fact as `bool`; do not manufacture an enum merely to
@@ -60,6 +61,12 @@ rewrites.
   Use them at a boundary when they make a stable interface easier to call;
   favor a concrete, readable signature for local code and when generics add no
   caller value.
+- Prefer concrete types and direct calls in local code. Introduce a custom
+  trait or generic abstraction only for a demonstrated current variation or
+  stable boundary; a one-implementation custom trait, one-use generic, or
+  forwarding wrapper is not enough. Implement established standard or library
+  traits when they express the type's real semantics. Hypothetical reuse and
+  testing convenience alone do not qualify.
 
 ## Choose Idioms for Clarity, Not Performance
 
@@ -78,6 +85,25 @@ rewrites.
   together unless established module organization provides a clearer shape.
 - Split modules by responsibility when that improves locality. Do not split a
   cohesive module by line count or create a new module for a one-use wrapper.
+
+## Macros and Declarative Code
+
+- Use established language or library macros and derives when they directly
+  express the construct: trait derivation, collection or formatting literals,
+  assertions, and `bitflags!` for genuinely independent flags are common
+  examples.
+- Use a small private `macro_rules!` macro when a declarative call or
+  declaration schema is clearer than an equivalent type or function. Repeated
+  syntax is one signal, not a requirement. Its invocation must name one
+  operation. Do not swallow errors or introduce hidden non-local control flow;
+  make fallibility and material effects evident at the invocation.
+- When values vary but the operation is the same, use a named specification
+  type with a helper or loop instead. Keep explicit phases when ordering or an
+  intervening effect matters.
+- Define an exported or procedural macro only for a stable cross-crate API or
+  unavoidable compile-time generation, not local convenience. Do not add any
+  macro merely to remove a few lines, conceal a poor interface, or make code
+  look clever.
 
 ## Let `rustfmt` Expose Expression Overload
 
@@ -176,12 +202,25 @@ After `cargo fmt`, inspect changed expressions that have become multi-line.
 
 ## Tests and Verification
 
+- For Rust code governed by this profile, keep production code in `src/` and
+  test code in the crate's `tests/` directory, overriding an existing
+  source-local test convention. Do not add or grow `#[cfg(test)] mod tests`;
+  documentation examples remain with the public API they document.
+- Test behavior through the crate's public, domain-oriented interface. Do not
+  widen visibility merely to reach an implementation detail from a test. If a
+  critical rule cannot be expressed through that interface, reconsider the
+  boundary rather than exposing an arbitrary helper.
+- For a binary-only crate, exercise its CLI, protocol, or other external
+  boundary from `tests/`; do not add a test-only library surface.
+- Put shared fixtures, test applications, and test-only helpers under
+  `tests/support/`. When modifying an existing source-local test, migrate it;
+  do not perform a mechanical repository-wide move without need.
 - Test names should state the scenario and expected outcome.
 - Assert returned values, state changes, errors, and externally observable
   effects. `is_ok()` or `is_some()` alone is insufficient when the actual
   value is meaningful.
-- Match nearby test structure and comment conventions. Do not add ritual
-  Arrange/Act/Assert comments if they are not customary or useful.
+- Match relevant conventions within `tests/`. Do not add ritual Arrange/Act/
+  Assert comments if they are not customary or useful.
 - Run the repository's relevant formatter, Clippy configuration, and tests.
   Treat new warnings as defects unless a narrow, documented exception is
   genuinely required.
