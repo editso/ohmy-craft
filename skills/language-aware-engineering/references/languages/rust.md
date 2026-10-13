@@ -68,6 +68,28 @@ rewrites.
   traits when they express the type's real semantics. Hypothetical reuse and
   testing convenience alone do not qualify.
 
+## Cargo Packages and Modules
+
+- Keep related application or library behavior in its existing Cargo package
+  by default. Organize internal responsibilities with `src/` modules and
+  directories; a domain, storage, transport, application, or feature area is
+  not by itself a reason to create a package or workspace member.
+- Create a new Cargo package only when it solves a demonstrated Cargo-level
+  need: an independently consumed, published, or versioned library; an
+  independently deployed product; a dependency direction that must be
+  enforced at Cargo level; required target, platform, native-dependency, or
+  artifact isolation; or a Rust-required boundary such as a procedural macro
+  crate.
+  Do not split for naming layers, organizing files, testing convenience, one
+  implementation, or hypothetical reuse.
+- A package boundary must justify the dependency edge and any public interface
+  it requires. Keep implementation details in the existing package; do not
+  widen visibility or add re-exports solely to make a new boundary work.
+- When several executable entry points share application code and lifecycle,
+  prefer one package with a library crate and thin `src/bin/` binaries. Split
+  packages only when the executables have an independent product, deployment,
+  target, or dependency boundary.
+
 ## Choose Idioms for Clarity, Not Performance
 
 - Use `match` or `if let` when variants or destructuring are central to the
@@ -203,14 +225,14 @@ After `cargo fmt`, inspect changed expressions that have become multi-line.
 ## Tests and Verification
 
 - For Rust code governed by this profile, keep production code in `src/` and
-  test code in the crate's `tests/` directory, overriding an existing
+  test code in the Cargo package's `tests/` directory, overriding an existing
   source-local test convention. Do not add or grow `#[cfg(test)] mod tests`;
   documentation examples remain with the public API they document.
 - Test behavior through the crate's public, domain-oriented interface. Do not
   widen visibility merely to reach an implementation detail from a test. If a
   critical rule cannot be expressed through that interface, reconsider the
   boundary rather than exposing an arbitrary helper.
-- For a binary-only crate, exercise its CLI, protocol, or other external
+- For a binary-only package, exercise its CLI, protocol, or other external
   boundary from `tests/`; do not add a test-only library surface.
 - Put shared fixtures, test applications, and test-only helpers under
   `tests/support/`. When modifying an existing source-local test, migrate it;
