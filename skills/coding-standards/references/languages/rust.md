@@ -228,12 +228,13 @@ After `cargo fmt`, inspect changed expressions that have become multi-line.
   test code in the Cargo package's `tests/` directory, overriding an existing
   source-local test convention. Do not add or grow `#[cfg(test)] mod tests`;
   documentation examples remain with the public API they document.
-- Test behavior through the crate's public, domain-oriented interface. Do not
-  widen visibility merely to reach an implementation detail from a test. If a
-  critical rule cannot be expressed through that interface, reconsider the
-  boundary rather than exposing an arbitrary helper.
-- For a binary-only package, exercise its CLI, protocol, or other external
-  boundary from `tests/`; do not add a test-only library surface.
+- In a package with a library crate, test behavior through its public,
+  domain-oriented interface. Do not widen visibility merely to reach an
+  implementation detail from a test. If a critical rule cannot be expressed
+  through that interface, reconsider the boundary rather than exposing an
+  arbitrary helper.
+- For a binary-only package, instead exercise its CLI, protocol, or other
+  external boundary from `tests/`; do not add a test-only library surface.
 - Put shared fixtures, test applications, and test-only helpers under
   `tests/support/`. When modifying an existing source-local test, migrate it;
   do not perform a mechanical repository-wide move without need.

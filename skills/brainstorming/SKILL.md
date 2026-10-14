@@ -51,26 +51,14 @@ When in doubt between two paths, take the heavier one. The ratchet is
 one-way: hidden complexity discovered mid-task upgrades the path —
 stop, say so, and step up. Nothing downgrades mid-task.
 
-## Anti-Pattern: "Too Simple To Need Approval"
-
-Every path ends with your human partner approving your intent before
-implementation. A todo list, a single-function utility, a config
-change — the design may be two sentences in chat, but you MUST present
-it and get approval. "Simple" tasks are where unexamined assumptions
-cause the most wasted work. What scales with simplicity is the
-artifact, never the approval.
-
 ## Red Flags
 
-| Thought | Reality |
-|---------|---------|
-| "This is too simple to need a design" | Simple means a short design, not no design. Two sentences in chat, then approval. |
-| "I'll call it bounded and skip the spec" | Reaching for a label to skip work IS the doubt — take the heavier path. |
-| "It's bounded and the design is obvious — I'll start while they read it" | The gate is the approval, not the design's length. Present, then stop until you hear yes. |
-| "I understand this kind of app, so it's bounded" | Bounded measures the repo, not your familiarity. A new project has no existing flow — it is architectural. |
-| "The spike works, so I'll keep the code" | A spike's output is an answer. Keeping the code is a new request — classify it. |
-| "It grew, but I'm almost done — no need to re-classify" | Hidden complexity upgrades the path mid-task. Stop and say so. |
-| "They approved the spike, so the follow-up change is approved too" | Each task gets its own classification and its own approval. |
+- Simple work gets a short design, never no design or approval. Do not start
+  while the user reads it.
+- A label never skips process: take the heavier path when in doubt; a new
+  project is architectural; hidden complexity upgrades the path.
+- A spike produces a recommendation, not retained implementation. Every
+  follow-up task is classified and approved independently.
 
 ## Checklist
 
@@ -101,50 +89,6 @@ your path and complete them in order.
 7. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 8. **User reviews written spec** — ask user to review the spec file before proceeding
 9. **Transition to implementation** — invoke writing-plans skill to create implementation plan
-
-## Process Flow
-
-```dot
-digraph brainstorming {
-    "Classify: spike / bounded / architectural" [shape=diamond];
-    "Present question + probe (2-3 sentences)" [shape=box];
-    "Ask clarifying questions (bounded)" [shape=box];
-    "Present short design in chat" [shape=box];
-    "Human approves?" [shape=diamond];
-    "Investigate; report recommendation" [shape=doublecircle];
-    "Implement via normal workflow (no plan doc)" [shape=doublecircle];
-    "Explore project context" [shape=box];
-    "Ask clarifying questions" [shape=box];
-    "Propose 2-3 approaches" [shape=box];
-    "Present design sections" [shape=box];
-    "User approves design?" [shape=diamond];
-    "Write design doc" [shape=box];
-    "Spec self-review\n(fix inline)" [shape=box];
-    "User reviews spec?" [shape=diamond];
-    "Invoke writing-plans skill" [shape=doublecircle];
-    "Hidden complexity? Upgrade path" [shape=box];
-
-    "Classify: spike / bounded / architectural" -> "Present question + probe (2-3 sentences)" [label="spike"];
-    "Classify: spike / bounded / architectural" -> "Ask clarifying questions (bounded)" [label="bounded"];
-    "Classify: spike / bounded / architectural" -> "Explore project context" [label="architectural"];
-    "Present question + probe (2-3 sentences)" -> "Human approves?";
-    "Ask clarifying questions (bounded)" -> "Present short design in chat";
-    "Present short design in chat" -> "Human approves?";
-    "Human approves?" -> "Investigate; report recommendation" [label="spike: yes"];
-    "Human approves?" -> "Implement via normal workflow (no plan doc)" [label="bounded: yes"];
-    "Hidden complexity? Upgrade path" -> "Classify: spike / bounded / architectural";
-    "Explore project context" -> "Ask clarifying questions";
-    "Ask clarifying questions" -> "Propose 2-3 approaches";
-    "Propose 2-3 approaches" -> "Present design sections";
-    "Present design sections" -> "User approves design?";
-    "User approves design?" -> "Present design sections" [label="no, revise"];
-    "User approves design?" -> "Write design doc" [label="yes"];
-    "Write design doc" -> "Spec self-review\n(fix inline)";
-    "Spec self-review\n(fix inline)" -> "User reviews spec?";
-    "User reviews spec?" -> "Write design doc" [label="changes requested"];
-    "User reviews spec?" -> "Invoke writing-plans skill" [label="approved"];
-}
-```
 
 **Terminal states are path-bound.** Architectural: the ONLY skill you
 invoke after brainstorming is writing-plans — never frontend-design,

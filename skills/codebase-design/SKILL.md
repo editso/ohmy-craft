@@ -29,27 +29,8 @@ Use these terms exactly: don't substitute "component," "service," "API," or "bou
 
 ## Deep vs shallow
 
-**Deep module** = small interface + lots of implementation:
-
-```
-┌─────────────────────┐
-│   Small Interface   │  ← Few methods, simple params
-├─────────────────────┤
-│                     │
-│  Deep Implementation│  ← Complex logic hidden
-│                     │
-└─────────────────────┘
-```
-
-**Shallow module** = large interface + little implementation (avoid):
-
-```
-┌─────────────────────────────────┐
-│       Large Interface           │  ← Many methods, complex params
-├─────────────────────────────────┤
-│  Thin Implementation            │  ← Just passes through
-└─────────────────────────────────┘
-```
+**Deep** means a small interface hides substantial behavior. **Shallow** means
+a large interface merely exposes a thin pass-through; avoid it.
 
 When designing an interface, ask:
 
@@ -96,11 +77,9 @@ Good interfaces make testing natural:
 
 ## Relationships
 
-- A **Module** has exactly one **Interface** (the surface it presents to callers and tests).
-- **Depth** is a property of a **Module**, measured against its **Interface**.
-- A **Seam** is where a **Module**'s **Interface** lives.
-- An **Adapter** sits at a **Seam** and satisfies the **Interface**.
-- **Depth** produces **Leverage** for callers and **Locality** for maintainers.
+A **Module** has one **Interface**; **Depth** is measured against it; its
+**Seam** locates it; an **Adapter** satisfies it; and depth yields **Leverage**
+and **Locality**.
 
 ## Rejected framings
 
