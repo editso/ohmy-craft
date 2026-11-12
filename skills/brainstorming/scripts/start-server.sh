@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # Start the brainstorm server and output connection info
-# Usage: start-server.sh [--project-dir <path>] [--host <bind-host>] [--url-host <display-host>] [--foreground] [--background]
+# Usage: start-server.sh [--session-dir <path> | --project-dir <path>] [--host <bind-host>] [--url-host <display-host>] [--foreground] [--background]
 #
 # Starts server on a random high port, outputs JSON with URL.
 # Each session gets its own directory to avoid conflicts.
 #
 # Options:
+#   --session-dir <path>  Store a session at this exact path. Use an ignored
+#                         task-artifact path such as .work/<date>/<task>/brainstorm.
+#                         Restarts reuse the session's port and key.
 #   --project-dir <path>  Store session files under <path>/.superpowers/brainstorm/
 #                         instead of /tmp. Files persist after server stops.
 #   --host <bind-host>    Host/interface to bind (default: 127.0.0.1).
@@ -21,6 +24,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Parse arguments
 PROJECT_DIR=""
+SESSION_DIR=""
 FOREGROUND="false"
 FORCE_BACKGROUND="false"
 BIND_HOST="127.0.0.1"
@@ -28,6 +32,10 @@ URL_HOST=""
 IDLE_TIMEOUT_MINUTES=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --session-dir)
+      SESSION_DIR="$2"
+      shift 2
+      ;;
     --project-dir)
       PROJECT_DIR="$2"
       shift 2
@@ -62,6 +70,20 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ -n "$SESSION_DIR" && -n "$PROJECT_DIR" ]]; then
+  echo '{"error": "Use either --session-dir or --project-dir, not both"}'
+  exit 1
+fi
+
+if [[ -n "$SESSION_DIR" ]]; then
+  case "$SESSION_DIR" in
+    /*|..|../*|*/..|*/../*|.|./|*/.)
+      echo '{"error": "--session-dir must be a non-root relative path without traversal"}'
+      exit 1
+      ;;
+  esac
+fi
 
 if [[ -z "$URL_HOST" ]]; then
   if [[ "$BIND_HOST" == "127.0.0.1" || "$BIND_HOST" == "localhost" ]]; then
@@ -110,10 +132,15 @@ fi
 # keep everything this script and the server create owner-only.
 umask 077
 
-# Generate unique session directory
+# Generate unique session directory when the caller did not choose one.
 SESSION_ID="$$-$(date +%s)"
 
-if [[ -n "$PROJECT_DIR" ]]; then
+if [[ -n "$SESSION_DIR" ]]; then
+  # Keep restart metadata beside the explicitly selected, normally ignored
+  # task artifact. The server-info file and token are owner-only.
+  export BRAINSTORM_PORT_FILE="${SESSION_DIR}/.last-port"
+  export BRAINSTORM_TOKEN_FILE="${SESSION_DIR}/.last-token"
+elif [[ -n "$PROJECT_DIR" ]]; then
   SESSION_DIR="${PROJECT_DIR}/.superpowers/brainstorm/${SESSION_ID}"
   # Persist the bound port and key per project so a restart reuses them and an
   # already-open browser tab reconnects to the same URL with a valid cookie.
@@ -128,7 +155,7 @@ PID_FILE="${STATE_DIR}/server.pid"
 LOG_FILE="${STATE_DIR}/server.log"
 SERVER_ID_FILE="${STATE_DIR}/server-instance-id"
 
-# Create fresh session directory with content and state peers
+# Create the session directory with content and state peers if absent.
 mkdir -p "${SESSION_DIR}/content" "$STATE_DIR"
 
 SERVER_ID=""
@@ -148,8 +175,6 @@ if [[ -f "$PID_FILE" ]]; then
   rm -f "$PID_FILE"
 fi
 
-cd "$SCRIPT_DIR" || exit 1
-
 # Resolve the harness PID (grandparent of this script).
 # $PPID is the ephemeral shell the harness spawned to run us — it dies
 # when this script exits. The harness itself is $PPID's parent.
@@ -168,7 +193,7 @@ fi
 
 # Foreground mode for environments that reap detached/background processes.
 if [[ "$FOREGROUND" == "true" ]]; then
-  env BRAINSTORM_DIR="$SESSION_DIR" BRAINSTORM_HOST="$BIND_HOST" BRAINSTORM_URL_HOST="$URL_HOST" BRAINSTORM_OWNER_PID="$OWNER_PID" node server.cjs "--brainstorm-server-id=$SERVER_ID" &
+  env BRAINSTORM_DIR="$SESSION_DIR" BRAINSTORM_HOST="$BIND_HOST" BRAINSTORM_URL_HOST="$URL_HOST" BRAINSTORM_OWNER_PID="$OWNER_PID" node "$SCRIPT_DIR/server.cjs" "--brainstorm-server-id=$SERVER_ID" &
   SERVER_PID=$!
   echo "$SERVER_PID" > "$PID_FILE"
   wait "$SERVER_PID"
@@ -177,7 +202,7 @@ fi
 
 # Start server, capturing output to log file
 # Use nohup to survive shell exit; disown to remove from job table
-nohup env BRAINSTORM_DIR="$SESSION_DIR" BRAINSTORM_HOST="$BIND_HOST" BRAINSTORM_URL_HOST="$URL_HOST" BRAINSTORM_OWNER_PID="$OWNER_PID" node server.cjs "--brainstorm-server-id=$SERVER_ID" > "$LOG_FILE" 2>&1 &
+nohup env BRAINSTORM_DIR="$SESSION_DIR" BRAINSTORM_HOST="$BIND_HOST" BRAINSTORM_URL_HOST="$URL_HOST" BRAINSTORM_OWNER_PID="$OWNER_PID" node "$SCRIPT_DIR/server.cjs" "--brainstorm-server-id=$SERVER_ID" > "$LOG_FILE" 2>&1 &
 SERVER_PID=$!
 disown "$SERVER_PID" 2>/dev/null
 echo "$SERVER_PID" > "$PID_FILE"
@@ -195,7 +220,7 @@ for _ in {1..50}; do
       sleep 0.1
     done
     if [[ "$alive" != "true" ]]; then
-      echo "{\"error\": \"Server started but was killed. Retry in a persistent terminal with: $SCRIPT_DIR/start-server.sh${PROJECT_DIR:+ --project-dir $PROJECT_DIR} --host $BIND_HOST --url-host $URL_HOST --foreground\"}"
+      echo '{"error": "Server started but was killed. Retry in a persistent terminal with the same session location and --foreground."}'
       exit 1
     fi
     grep "server-started" "$LOG_FILE" | head -1

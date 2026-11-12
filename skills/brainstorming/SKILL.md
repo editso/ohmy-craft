@@ -45,7 +45,10 @@ override it:
 - **Architectural** — new projects, new subsystems, changes that
   restructure how components fit together or alter interfaces others
   depend on. Follow the full process: questions, approaches, sectioned
-  design, written spec, then the writing-plans skill.
+  design, written spec, then [writing-plans](../writing-plans/SKILL.md). When
+  the design redistributes module responsibilities or creates an interface for
+  multiple callers, use [codebase-design](../codebase-design/SKILL.md) while
+  developing the design, before it is approved.
 
 When in doubt between two paths, take the heavier one. The ratchet is
 one-way: hidden complexity discovered mid-task upgrades the path —
@@ -73,29 +76,35 @@ your path and complete them in order.
 5. **Report findings** — a recommendation; label anything built as throwaway
 
 **Bounded:**
-1. **Explore project context** — check files, docs, recent commits
+1. **Explore project context** — inspect only the target code, local docs, and
+   history needed to validate the design; inspect commits only when they could
+   change the decision
 2. **Ask clarifying questions** — one at a time, the ones that matter
 3. **Present short design in chat** — approach, files touched, testing
 4. **Get approval** — STOP and wait for an explicit yes; presenting the design and starting in the same breath is skipping the gate
 5. **Implement** — proceed with the normal development workflow (TDD applies); no plan document
 
 **Architectural:**
-1. **Explore project context** — check files, docs, recent commits
+1. **Explore project context** — inspect only the target code, local docs, and
+   history needed to validate the design; inspect commits only when they could
+   change the decision
 2. **Offer the visual companion just-in-time** — NOT upfront. The first time a question would genuinely be clearer shown than described, offer it then (its own message); on approval its browser tab opens for you. If no visual question ever arises, never offer it. See the Visual Companion section below.
 3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation
 5. **Present design** — in sections scaled to their complexity, get user approval after each section
-6. **Write design doc** — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` and commit
+6. **Write design doc** — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
 7. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 8. **User reviews written spec** — ask user to review the spec file before proceeding
-9. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+9. **Implementation plan** — invoke [writing-plans](../writing-plans/SKILL.md)
 
-**Terminal states are path-bound.** Architectural: the ONLY skill you
-invoke after brainstorming is writing-plans — never frontend-design,
-mcp-builder, or any other implementation skill. Bounded: after
-approval, implementation proceeds directly through the normal
-development workflow; no plan document. Spike: the terminal state is a
-reported recommendation.
+**Terminal states are path-bound.** Architectural: the next workflow-specific
+skill is [writing-plans](../writing-plans/SKILL.md). Do not start another
+implementation workflow before the plan is written and approved. Continue to
+apply cross-cutting guidance such as `working-efficiently`; complete any
+applicable `codebase-design` work during design rather than after planning has
+fixed the interface. Bounded: after approval, implementation proceeds directly
+through the normal development workflow; no plan document. Spike: the terminal
+state is a reported recommendation.
 
 ## The Process
 
@@ -107,7 +116,8 @@ is the whole process.
 
 **Understanding the idea:**
 
-- Check out the current project state first (files, docs, recent commits)
+- Inspect only the target code, local docs, and history needed to validate the
+  design. Inspect recent commits only when they could change the decision.
 - Before asking detailed questions, assess scope: if the request describes multiple independent subsystems (e.g., "build a platform with chat, file storage, billing, and analytics"), flag this immediately. Don't spend questions refining details of a project that needs to be decomposed first.
 - If the project is too large for a single spec, help the user decompose into sub-projects: what are the independent pieces, how do they relate, what order should they be built? Then brainstorm the first sub-project through the normal design flow. Each sub-project gets its own spec → plan → implementation cycle.
 - For appropriately-scoped projects, ask questions one at a time to refine the idea
@@ -150,7 +160,8 @@ is the whole process.
 - Write the validated design (spec) to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
   - (User preferences for spec location override this default)
 - Use elements-of-style:writing-clearly-and-concisely skill if available
-- Commit the design document to git
+- Commit the design document only when the user requests it or project
+  convention requires it
 
 **Spec Self-Review:**
 After writing the spec document, look at it with fresh eyes:
@@ -162,17 +173,25 @@ After writing the spec document, look at it with fresh eyes:
 
 Fix any issues inline. No need to re-review — just fix and move on.
 
+For a high-risk spec, an independent review can supplement this self-review
+when delegation is available and appropriate. Use the optional
+[reviewer prompt](spec-document-reviewer-prompt.md); it does not replace the
+self-review or make delegation mandatory.
+
 **User Review Gate:**
 After the spec review loop passes, ask the user to review the written spec before proceeding:
 
-> "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
+> "Spec written to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
 
 Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
 
 **Implementation:**
 
-- Invoke the writing-plans skill to create a detailed implementation plan
-- Do NOT invoke any other skill. writing-plans is the next step.
+- Invoke [writing-plans](../writing-plans/SKILL.md) to create the detailed
+  implementation plan.
+- `writing-plans` is the next workflow-specific step. Cross-cutting guidance
+  remains in force; any applicable `codebase-design` decision belongs in the
+  approved design, not after the plan is written.
 
 ## Visual Companion
 
@@ -190,5 +209,7 @@ A browser-based companion for showing mockups, diagrams, and visual options duri
 
 A question about a UI topic is not automatically a visual question. "What does personality mean in this context?" is a conceptual question — use the terminal. "Which wizard layout works better?" is a visual question — use the browser.
 
-If they agree to the companion, read the detailed guide before proceeding:
-`skills/brainstorming/visual-companion.md`
+If they agree to the companion, read the [detailed guide](visual-companion.md)
+before proceeding. It defines the capability check, local session location,
+and text-only fallback; accepting the companion does not authorize external
+network resources.

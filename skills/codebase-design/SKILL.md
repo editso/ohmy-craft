@@ -9,7 +9,10 @@ Design **deep modules**: a lot of behaviour behind a small interface, placed at 
 
 ## Glossary
 
-Use these terms exactly: don't substitute "component," "service," "API," or "boundary." Consistent language is the whole point.
+When discussing the deep-module model, use the terms below precisely. Prefer
+**module**, **interface**, **seam**, and **adapter** for their defined roles;
+do not use **boundary** as a synonym for **seam**. Other terms may retain their
+ordinary project meaning outside this model.
 
 **Module**: anything with an interface and an implementation. Deliberately scale-agnostic: a function, class, package, or tier-spanning slice. This does not justify creating a package or project boundary for an internal responsibility; use language-native modules unless a tooling-level boundary has a current benefit. _Avoid_: unit, component, service.
 

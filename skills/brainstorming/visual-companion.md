@@ -30,20 +30,54 @@ The server watches a directory for HTML files and serves the newest one to the b
 
 **Content fragments vs full documents:** If your HTML file starts with `<!DOCTYPE` or `<html`, the server serves it as-is (just injects the helper script). Otherwise, the server automatically wraps your content in the frame template — adding the header, CSS theme, connection status, and all interactive infrastructure. **Write content fragments by default.** Only write full documents when you need complete control over the page.
 
+## Runtime Contract
+
+The companion is optional. After the user accepts it, resolve
+`BRAINSTORM_SKILL_DIR` as this guide's containing skill directory; use its
+known path directly, never by scanning outside the project. Check that Node is
+available and that the environment can keep a local server alive. If either is
+unavailable, say so and continue the design text-only; do not block
+brainstorming on the companion.
+
+Use the project's ignored task-artifact area by default. The session contains a
+bearer URL/key and must not be staged, shared beyond the user, or left in an
+unignored project path. Under `working-efficiently`, the default is `.work/`;
+if it is not ignored, disclose that and ask the user for a safe location before
+creating a session. With the durable task date and ID, set:
+
+```bash
+BRAINSTORM_SESSION_DIR=.work/<date>/<task-id>/brainstorm
+```
+
+Use `--project-dir .` only when `.superpowers/` is already ignored by project
+convention or the user explicitly approves adding it to ignore rules. Ask
+before creating that persistent location. It is for deliberately retained
+mockups; the default `.work/` session is disposable.
+
+The companion is local by default and must not load remote images, fonts,
+scripts, or other assets. Use CSS, local assets, or user-provided content.
+Ask for explicit external-access approval before using any remote asset.
+
 ## Starting a Session
 
 ```bash
-# Start AFTER the user approves the companion. --open auto-opens their browser on
-# the first screen; --project-dir persists mockups and enables same-port restart.
-scripts/start-server.sh --project-dir /path/to/project --open
+# Start AFTER the user approves the companion. --open opens their browser on
+# the first screen. The default session stays in ignored task-local scratch.
+bash "$BRAINSTORM_SKILL_DIR/scripts/start-server.sh" \
+  --session-dir "$BRAINSTORM_SESSION_DIR" \
+  --open
 
 # Returns: {"type":"server-started","port":52341,
 #           "url":"http://localhost:52341/?key=ab12…",
-#           "screen_dir":"/path/to/project/.superpowers/brainstorm/12345-1706000000/content",
-#           "state_dir":"/path/to/project/.superpowers/brainstorm/12345-1706000000/state"}
+#           "screen_dir":".work/<date>/<task-id>/brainstorm/content",
+#           "state_dir":".work/<date>/<task-id>/brainstorm/state"}
 ```
 
 Save `screen_dir` and `state_dir` from the response. With `--open`, the browser opens itself when you push the first screen — you don't need to ask the user to open it, but still share the URL as a fallback (headless/remote setups won't auto-open).
+
+Set `BRAINSTORM_SCREEN_DIR` and `BRAINSTORM_STATE_DIR` to those returned,
+project-relative paths for the rest of the session. Do not rediscover them by
+scanning directories.
 
 **The URL contains a session key (`?key=…`).** The server rejects any request
 without it, so always give the user the **complete** URL from the `url` field —
@@ -53,41 +87,46 @@ the network can't read the screens or inject events. After the first load the
 browser remembers the key via a cookie, so reloads and `/files/*` assets work
 without repeating it.
 
-**Finding connection info:** The server writes its startup JSON to `$STATE_DIR/server-info`. If you launched the server in the background and didn't capture stdout, read that file to get the URL and port. When using `--project-dir`, check `<project>/.superpowers/brainstorm/` for the session directory.
-
-**Note:** Pass the project root as `--project-dir` so mockups persist in `.superpowers/brainstorm/` and survive server restarts. Without it, files go to `/tmp` and get cleaned up. Remind the user to add `.superpowers/` to `.gitignore` if it's not already there.
+**Finding connection info:** The server writes its startup JSON to
+`$BRAINSTORM_STATE_DIR/server-info`. If background launch output was not captured, read
+that known, project-relative path. When using `--project-dir .`, use the
+approved `.superpowers/brainstorm/` location; otherwise keep using the chosen
+`.work/` session directory.
 
 **Launching the server by platform:**
 
 **Claude Code:**
 ```bash
 # Default mode works — the script backgrounds the server itself.
-scripts/start-server.sh --project-dir /path/to/project --open
+bash "$BRAINSTORM_SKILL_DIR/scripts/start-server.sh" \
+  --session-dir "$BRAINSTORM_SESSION_DIR" --open
 ```
 
-On Windows, the script auto-detects and switches to foreground mode (which blocks the tool call). Use `run_in_background: true` on the Bash tool call so the server survives across conversation turns, then read `$STATE_DIR/server-info` on the next turn to get the URL and port.
+On Windows, the script auto-detects and switches to foreground mode (which blocks the tool call). Use `run_in_background: true` on the Bash tool call so the server survives across conversation turns, then read `$BRAINSTORM_STATE_DIR/server-info` on the next turn to get the URL and port.
 
 **Codex:**
 ```bash
 # Codex reaps background processes. The script auto-detects CODEX_CI and
 # switches to foreground mode. Run it normally — no extra flags needed.
-scripts/start-server.sh --project-dir /path/to/project --open
+bash "$BRAINSTORM_SKILL_DIR/scripts/start-server.sh" \
+  --session-dir "$BRAINSTORM_SESSION_DIR" --open
 ```
 
 **Gemini CLI:**
 ```bash
 # Use --foreground and set is_background: true on your shell tool call
 # so the process survives across turns
-scripts/start-server.sh --project-dir /path/to/project --open --foreground
+bash "$BRAINSTORM_SKILL_DIR/scripts/start-server.sh" \
+  --session-dir "$BRAINSTORM_SESSION_DIR" --open --foreground
 ```
 
 **Copilot CLI:**
 ```bash
 # Start it with Copilot CLI's non-blocking/background shell mechanism so the
 # server survives across turns. Keep --foreground so the harness, not the
-# script, owns backgrounding. The launcher is a .sh, so invoke it via bash
-# (on Windows, call Git Bash's bash.exe from the PowerShell tool).
-bash scripts/start-server.sh --project-dir /path/to/project --open --foreground
+# script, owns backgrounding. On Windows, use Git Bash's bash.exe.
+bash "$BRAINSTORM_SKILL_DIR/scripts/start-server.sh" \
+  --session-dir "$BRAINSTORM_SESSION_DIR" --open --foreground
 ```
 
 **Other environments:** The server must keep running in the background across conversation turns. If your environment reaps detached processes, use `--foreground` and launch the command with your platform's background execution mechanism.
@@ -95,8 +134,8 @@ bash scripts/start-server.sh --project-dir /path/to/project --open --foreground
 If the URL is unreachable from your browser (common in remote/containerized setups), bind a non-loopback host:
 
 ```bash
-scripts/start-server.sh \
-  --project-dir /path/to/project \
+bash "$BRAINSTORM_SKILL_DIR/scripts/start-server.sh" \
+  --session-dir "$BRAINSTORM_SESSION_DIR" \
   --host 0.0.0.0 \
   --url-host localhost
 ```
@@ -106,7 +145,7 @@ Use `--url-host` to control what hostname is printed in the returned URL JSON.
 ## The Loop
 
 1. **Check server is alive**, then **write HTML** to a new file in `screen_dir`:
-   - **Required: confirm the server is alive before referring to the URL or pushing a screen.** Check that `$STATE_DIR/server-info` exists and `$STATE_DIR/server-stopped` does not. If it has shut down, restart it with `start-server.sh` using the **same `--project-dir`** — it reuses the same port, so the user's open tab reconnects on its own (it shows a "paused" overlay while the server is down) and you don't need to send a new URL. The server auto-exits after 4 hours idle (configurable with `--idle-timeout-minutes`).
+   - **Required: confirm the server is alive before referring to the URL or pushing a screen.** Check that `$BRAINSTORM_STATE_DIR/server-info` exists and `$BRAINSTORM_STATE_DIR/server-stopped` does not. If it has shut down, restart it with the same `--session-dir` (or the explicitly approved `--project-dir`) so it reuses the same port; the user's open tab reconnects on its own and you do not need to send a new URL. The server auto-exits after 4 hours idle (configurable with `--idle-timeout-minutes`).
    - Use semantic filenames: `platform.html`, `visual-style.html`, `layout.html`
    - **Never reuse filenames** — each screen gets a fresh file
    - Use your file-creation tool — **never use cat/heredoc** (dumps noise into terminal)
@@ -118,7 +157,7 @@ Use `--url-host` to control what hostname is printed in the returned URL JSON.
    - Ask them to respond in the terminal: "Take a look and let me know what you think. Click to select an option if you'd like."
 
 3. **On your next turn** — after the user responds in the terminal:
-   - Read `$STATE_DIR/events` if it exists — this contains the user's browser interactions (clicks, selections) as JSON lines
+   - Read `$BRAINSTORM_STATE_DIR/events` if it exists — this contains the user's browser interactions (clicks, selections) as JSON lines
    - Merge with the user's terminal text to get the full picture
    - The terminal message is the primary feedback; `state_dir/events` provides structured interaction data
 
@@ -257,7 +296,7 @@ The frame template provides these CSS classes for your content:
 
 ## Browser Events Format
 
-When the user clicks options in the browser, their interactions are recorded to `$STATE_DIR/events` (one JSON object per line). The file is cleared automatically when you push a new screen.
+When the user clicks options in the browser, their interactions are recorded to `$BRAINSTORM_STATE_DIR/events` (one JSON object per line). The file is cleared automatically when you push a new screen.
 
 ```jsonl
 {"type":"click","choice":"a","text":"Option A - Simple Layout","timestamp":1706000101}
@@ -267,7 +306,7 @@ When the user clicks options in the browser, their interactions are recorded to 
 
 The full event stream shows the user's exploration path — they may click multiple options before settling. The last `choice` event is typically the final selection, but the pattern of clicks can reveal hesitation or preferences worth asking about.
 
-If `$STATE_DIR/events` doesn't exist, the user didn't interact with the browser — use only their terminal text.
+If `$BRAINSTORM_STATE_DIR/events` doesn't exist, the user didn't interact with the browser — use only their terminal text.
 
 ## Design Tips
 
@@ -275,7 +314,7 @@ If `$STATE_DIR/events` doesn't exist, the user didn't interact with the browser 
 - **Explain the question on each page** — "Which layout feels more professional?" not just "Pick one"
 - **Iterate before advancing** — if feedback changes current screen, write a new version
 - **2-4 options max** per screen
-- **Use real content when it matters** — for a photography portfolio, use actual images (Unsplash). Placeholder content obscures design issues.
+- **Use real content when it matters** — prefer user-provided or local assets. Use a remote image only after the user explicitly approves external access; otherwise representative local content is enough for the decision.
 - **Keep mockups simple** — focus on layout and structure, not pixel-perfect design
 
 ## File Naming
@@ -288,10 +327,12 @@ If `$STATE_DIR/events` doesn't exist, the user didn't interact with the browser 
 ## Cleaning Up
 
 ```bash
-scripts/stop-server.sh $SESSION_DIR
+bash "$BRAINSTORM_SKILL_DIR/scripts/stop-server.sh" "$BRAINSTORM_SESSION_DIR"
 ```
 
-If the session used `--project-dir`, mockup files persist in `.superpowers/brainstorm/` for later reference. Only `/tmp` sessions get deleted on stop.
+Sessions in `.work/` are disposable task artifacts; remove them with the rest
+of the task scratch when no longer needed. A session in `.superpowers/` remains
+only when its ignored location was explicitly approved for retained mockups.
 
 ## Reference
 

@@ -51,6 +51,10 @@ Treat the task-start working directory as the hard exploration boundary. Run
 - Never search or inspect `/`, absolute paths, `..`, `~`, `$HOME`, `git -C`,
   or silently `cd` elsewhere. Even read-only access outside the directory
   needs explicit authorization.
+- A resource explicitly linked by a loaded skill may be read or executed at
+  its known skill-relative path when that workflow requires it; this is not
+  project exploration. Do not browse that skill's parent directories, and do
+  not treat it as permission for network access or unrelated filesystem reads.
 - Do not use `find` for routine exploration. Prefer bounded `rg --files` or
   `rg` against a known directory.
 - Bound every search by directory, file type, exclusions, and output; exclude
@@ -84,10 +88,21 @@ For several non-trivial steps, meaningful file/system changes, or work costly
 to lose at a context reset, maintain concise durable progress. Skip it for
 short, low-risk work, even with a few quick steps. Prefer an existing project
 artifact or persistent host-native state; preserve a user-managed format and
-never repurpose an unrelated `TODO.md` or `PLAN.md`. Otherwise use
-`.work/<date>/<task-id>/progress.md`, with the task-start date and a
-`<type>-<short-slug>` task ID (for example `feature`, `bugfix`, `refactor`,
-`chore`, `spike`, or `docs`); never share one record across unrelated tasks.
+never repurpose an unrelated `TODO.md` or `PLAN.md`. If the project already
+provides an ignored task-storage convention, preserve it. Otherwise use this
+default pair: notes in `.agents/notes/<date>/<task-id>/progress.md`, with the
+task-start date and a `<type>-<short-slug>` ID (for example `feature`, `bugfix`,
+`refactor`, `chore`, `spike`, or `docs`); and agent-created, task-specific
+disposable artifacts in `.work/<date>/<task-id>/`, rather than `/tmp` or
+another system scratch location. Never share a record across unrelated tasks
+or store notes in `.work/`: it may be deleted without losing task state.
+
+The disposable-artifact rule excludes deliverables, repository test fixtures,
+project-conventional locations, and paths another applicable skill requires.
+
+If a default path used is unignored, do not change ignore rules without the
+project's convention or user approval; disclose that path rather than leaving
+it unexplained.
 
 The progress file is the durable source of truth for task state. An in-chat todo or UI task list may mirror it, but never replaces it. Keep the file short and record only what is needed to resume:
 
@@ -121,17 +136,16 @@ Use `[ ]` pending, `[~]` in progress, `[x]` completed and verified, and `[!]`
 blocked with a reason. Before substantial work, create or read the record and
 mark `[~]` with a concrete `Next`; update it with result and verification after
 each atomic task. Record only decisions, deviations, and blockers that change
-the path—never every tool call or the conversation. Treat `.work/` as scratch:
-use an existing ignored location when available, do not change ignore rules
-without the project's convention or approval, and disclose a new unignored
-path rather than leaving it unexplained.
+the path—never every tool call or the conversation.
 
 On resume or possible compaction, read the matching record before relying on
-memory. For `.work/`, inspect only date directories and immediate task
-directories for `progress.md`; verify task and scope, skip `[x]`, and resume
-`[~]` from `Next`. Prefer current files and git status if they conflict with
-the record; if multiple records match or the conflict remains, ask the user.
-Do not repeat completed work just because prior conversation is unavailable.
+memory. For the default `.agents/notes/` layout, inspect only date directories
+and immediate task directories for `progress.md`; for an established convention,
+use its known task index with equivalent bounded scope. Verify task and scope,
+skip `[x]`, and resume `[~]` from `Next`. Prefer current files and git status
+if they conflict with the record; if multiple records match or the conflict
+remains, ask the user. Do not repeat completed work just because prior
+conversation is unavailable.
 
 Update before a likely context boundary and before delivery. Mark `complete`
 only after verification; leave or archive the task record by project
